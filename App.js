@@ -1,13 +1,22 @@
 // App.js
 import React, { useState } from 'react';
 import { StyleSheet, View, Text, Button, Alert, Platform } from 'react-native';
-import { AuthProvider } from './src/context/AuthContext';
+import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { ThemeProvider } from './src/context/ThemeContext';
 import { CartProvider } from './src/context/CartContext';
 import MenuScreen from './src/screens/MenuScreen';
+import LoginScreen from './src/screens/LoginScreen';
 import { placeDummyOrder } from './src/services/api';
 
-export default function App() {
+// LoginScreen agar navigation use kare to crash na ho
+const fakeNavigation = {
+  navigate: () => {},
+  replace: () => {},
+  goBack: () => {},
+};
+
+function AppContent() {
+  const { user, login, logout } = useAuth();
   const [status, setStatus] = useState('');
 
   const showMessage = (title, msg) => {
@@ -27,17 +36,30 @@ export default function App() {
     }
   };
 
+  // Login nahi hua to pehle Login screen
+  if (!user) {
+    return <LoginScreen onLogin={login} navigation={fakeNavigation} />;
+  }
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.btn}>
+        <Text style={styles.welcome}>Welcome, {user.name || user.email}</Text>
+        <Button title="Place Dummy Order" onPress={handleDummyOrder} />
+        {status !== '' && <Text style={styles.status}>{status}</Text>}
+        <Button title="Logout" color="#888" onPress={logout} />
+      </View>
+      <MenuScreen />
+    </View>
+  );
+}
+
+export default function App() {
   return (
     <AuthProvider>
       <ThemeProvider>
         <CartProvider>
-          <View style={styles.container}>
-            <View style={styles.btn}>
-              <Button title="Place Dummy Order" onPress={handleDummyOrder} />
-              {status !== '' && <Text style={styles.status}>{status}</Text>}
-            </View>
-            <MenuScreen />
-          </View>
+          <AppContent />
         </CartProvider>
       </ThemeProvider>
     </AuthProvider>
@@ -47,5 +69,6 @@ export default function App() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
   btn: { marginTop: 40, marginHorizontal: 16 },
-  status: { marginTop: 8, marginBottom: 8, color: '#000', fontWeight: '600' },
+  welcome: { fontWeight: '700', marginBottom: 6, color: '#000' },
+  status: { marginVertical: 8, color: '#000', fontWeight: '600' },
 });
